@@ -1,0 +1,74 @@
+/*
+  ESP32 -> Send alternating 0 and 1 to ThingSpeak
+*/
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// WiFi credentials
+const char* ssid = "DESKTOP-TJNR2MP 7176";
+const char* password = "CBMR104B";
+
+// ThingSpeak settings
+String apiKey = "RZ3WCA3FWQ7P8DTY";
+const char* server = "http://api.thingspeak.com/update";
+
+// Variable to alternate values
+int valueToSend = 0;
+
+void initWiFi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi ..");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print('.');
+    delay(1000);
+  }
+
+  Serial.println("\nConnected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("RSSI: ");
+  Serial.println(WiFi.RSSI());
+}
+
+void setup() {
+  Serial.begin(115200);
+  initWiFi();
+}
+
+void loop() {
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    HTTPClient http;
+
+    // Create URL with field1 value
+    String url = String(server) + "?api_key=" + apiKey + "&field1=" + String(valueToSend);
+
+    http.begin(url);
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      Serial.print("Data sent: ");
+      Serial.println(valueToSend);
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+    } else {
+      Serial.print("Error sending data. Code: ");
+      Serial.println(httpResponseCode);
+    }
+
+    http.end();
+
+    // Toggle value (0 -> 1, 1 -> 0)
+    valueToSend = !valueToSend;
+
+  } else {
+    Serial.println("WiFi Disconnected");
+  }
+
+  // ThingSpeak allows updates every 15 seconds (free account)
+  delay(15000);
+}
